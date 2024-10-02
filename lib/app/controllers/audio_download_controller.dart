@@ -27,6 +27,8 @@ class AudioDownloadController extends ChangeNotifier {
     actualDownloadVideo.value = null;
     downloadsCount.value = 0;
     downloadsProgress.value = 0;
+    actualAudioOrVideoDownloadedBytes.value = 0;
+    actualAudioOrVideoTotalBytes.value = 0;
     cancelDownload.value = false;
   }
 
@@ -55,16 +57,47 @@ class AudioDownloadController extends ChangeNotifier {
     try {
       actualDownloadVideo.value =
           await YoutubeExplodeService.instance.getVideo(url);
-      Stream<List<int>> videoStream =
-          await YoutubeExplodeService.instance.getVideoStream(url);
-      var videoTitle = await YoutubeExplodeService.instance.getVideoTitle(url);
-      videoTitle = limparNomeArquivo(videoTitle);
+
+      var yt = YoutubeExplode();
+      var video = await yt.videos.get(url);
+      var manifest = await yt.videos.streamsClient.getManifest(video.id);
+
+      // Get video stream info (choose desired quality or highest bitrate)
+      var videoStreamInfo = manifest.muxed.withHighestBitrate();
+
+      // Set total bytes
+      actualAudioOrVideoTotalBytes.value = videoStreamInfo.size.totalBytes;
+
+      var videoTitle = limparNomeArquivo(
+          await YoutubeExplodeService.instance.getVideoTitle(url));
       var file = File('$path/$videoTitle.mp4');
       await requestStoragePermission();
       var fileStream = file.openWrite();
-      await videoStream.pipe(fileStream);
+
+      // Get the stream and update progress
+      var videoStream = yt.videos.streamsClient.get(videoStreamInfo);
+
+      int downloadedBytes = 0;
+      await for (final data in videoStream) {
+        if (cancelDownload.value) {
+          // Cancel download
+          break;
+        }
+        downloadedBytes += data.length;
+        actualAudioOrVideoDownloadedBytes.value = downloadedBytes;
+        fileStream.add(data);
+      }
+      if (cancelDownload.value) {
+        // If download was cancelled, delete the incomplete file
+        await fileStream.close();
+        await file.delete();
+        yt.close();
+        return;
+      }
+
       await fileStream.flush();
       await fileStream.close();
+      yt.close();
     } catch (e) {
       rethrow;
     }
@@ -89,10 +122,15 @@ class AudioDownloadController extends ChangeNotifier {
           child: DownloadingCard(),
         ),
       );
+
       await downloadAndSaveVideo(
         urlController.text,
         pathController.text,
       );
+      if (cancelDownload.value) {
+        clearDownloadProgress();
+        return;
+      }
       DateTime data = DateTime.now();
       var nome = await YoutubeExplodeService.instance
           .getVideoTitle(urlController.text);
@@ -107,19 +145,19 @@ class AudioDownloadController extends ChangeNotifier {
       );
       await AudioPlayerController.instance.downloadCompleted();
       clearDownloadProgress();
-      context.mounted ? Navigator.pop(context) : null;
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
-      context.mounted ? Navigator.pop(context) : null;
-      context.mounted
-          ? ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString()),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 1),
-              ),
-            )
-          : null;
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
       clearDownloadProgress();
       return;
     }
@@ -132,16 +170,49 @@ class AudioDownloadController extends ChangeNotifier {
     try {
       actualDownloadVideo.value =
           await YoutubeExplodeService.instance.getVideo(url);
-      Stream<List<int>> audioStream =
-          await YoutubeExplodeService.instance.getAudioStream(url);
-      var audioTitle = await YoutubeExplodeService.instance.getVideoTitle(url);
-      audioTitle = limparNomeArquivo(audioTitle);
+
+      var yt = YoutubeExplode();
+      var video = await yt.videos.get(url);
+      var manifest = await yt.videos.streamsClient.getManifest(video.id);
+
+      // Get audio stream info
+      var audioStreamInfo = manifest.audioOnly.withHighestBitrate();
+
+      // Set total bytes
+      actualAudioOrVideoTotalBytes.value = audioStreamInfo.size.totalBytes;
+
+      var audioTitle = limparNomeArquivo(
+          await YoutubeExplodeService.instance.getVideoTitle(url));
       var file = File('$path/$audioTitle.mp3');
       await requestStoragePermission();
       var fileStream = file.openWrite();
-      await audioStream.pipe(fileStream);
+
+      // Get the stream and update progress
+      var audioStream = yt.videos.streamsClient.get(audioStreamInfo);
+
+      int downloadedBytes = 0;
+      await for (final data in audioStream) {
+        if (cancelDownload.value) {
+          // Cancel download
+          break;
+        }
+
+        downloadedBytes += data.length;
+        actualAudioOrVideoDownloadedBytes.value = downloadedBytes;
+        fileStream.add(data);
+      }
+
+      if (cancelDownload.value) {
+        // If download was cancelled, delete the incomplete file
+        await fileStream.close();
+        await file.delete();
+        yt.close();
+        return;
+      }
+
       await fileStream.flush();
       await fileStream.close();
+      yt.close();
     } catch (e) {
       rethrow;
     }
@@ -170,6 +241,10 @@ class AudioDownloadController extends ChangeNotifier {
         urlController.text,
         pathController.text,
       );
+      if (cancelDownload.value) {
+        clearDownloadProgress();
+        return;
+      }
       DateTime data = DateTime.now();
       var nome = await YoutubeExplodeService.instance
           .getVideoTitle(urlController.text);
@@ -184,19 +259,19 @@ class AudioDownloadController extends ChangeNotifier {
       );
       await AudioPlayerController.instance.downloadCompleted();
       clearDownloadProgress();
-      context.mounted ? Navigator.pop(context) : null;
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
-      context.mounted ? Navigator.pop(context) : null;
-      context.mounted
-          ? ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString()),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 1),
-              ),
-            )
-          : null;
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
       clearDownloadProgress();
       return;
     }
@@ -221,24 +296,24 @@ class AudioDownloadController extends ChangeNotifier {
           child: DownloadingCard(),
         ),
       );
-      Stream<Video> aux =
-          await YoutubeExplodeService.instance.getPlaylist(urlController.text);
-      List<Video> size = await aux.toList();
-      downloadsCount.value = size.length;
-      Stream<Video> playlist =
-          await YoutubeExplodeService.instance.getPlaylist(urlController.text);
-      await for (Video video in playlist) {
+      var yt = YoutubeExplode();
+      var playlist = await yt.playlists.get(urlController.text);
+      var videos = await yt.playlists.getVideos(playlist.id).toList();
+      downloadsCount.value = videos.length;
+
+      for (var video in videos) {
         if (cancelDownload.value) {
           clearDownloadProgress();
           cancelDownload.value = false;
+          yt.close();
           return;
         }
         await downloadAndSaveVideo(video.url, pathController.text);
         downloadsProgress.value++;
       }
+
       DateTime data = DateTime.now();
-      var nome = await YoutubeExplodeService.instance
-          .getPlaylistTitle(urlController.text);
+      var nome = playlist.title;
       await HistoryController.instance.addToHistory(
         HistoryModel(
           nome: nome,
@@ -250,19 +325,20 @@ class AudioDownloadController extends ChangeNotifier {
       );
       await AudioPlayerController.instance.downloadCompleted();
       clearDownloadProgress();
-      context.mounted ? Navigator.pop(context) : null;
+      yt.close();
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
-      context.mounted ? Navigator.pop(context) : null;
-      context.mounted
-          ? ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString()),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 1),
-              ),
-            )
-          : null;
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
       clearDownloadProgress();
       return;
     }
@@ -287,24 +363,24 @@ class AudioDownloadController extends ChangeNotifier {
           child: DownloadingCard(),
         ),
       );
-      Stream<Video> aux =
-          await YoutubeExplodeService.instance.getPlaylist(urlController.text);
-      List<Video> size = await aux.toList();
-      downloadsCount.value = size.length;
-      Stream<Video> playlist =
-          await YoutubeExplodeService.instance.getPlaylist(urlController.text);
-      await for (Video video in playlist) {
+      var yt = YoutubeExplode();
+      var playlist = await yt.playlists.get(urlController.text);
+      var videos = await yt.playlists.getVideos(playlist.id).toList();
+      downloadsCount.value = videos.length;
+
+      for (var video in videos) {
         if (cancelDownload.value) {
           clearDownloadProgress();
           cancelDownload.value = false;
+          yt.close();
           return;
         }
         await downloadAndSaveAudio(video.url, pathController.text);
         downloadsProgress.value++;
       }
+
       DateTime data = DateTime.now();
-      var nome = await YoutubeExplodeService.instance
-          .getPlaylistTitle(urlController.text);
+      var nome = playlist.title;
       await HistoryController.instance.addToHistory(
         HistoryModel(
           nome: nome,
@@ -316,19 +392,20 @@ class AudioDownloadController extends ChangeNotifier {
       );
       await AudioPlayerController.instance.downloadCompleted();
       clearDownloadProgress();
-      context.mounted ? Navigator.pop(context) : null;
+      yt.close();
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
-      context.mounted ? Navigator.pop(context) : null;
-      context.mounted
-          ? ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString()),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 1),
-              ),
-            )
-          : null;
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
       clearDownloadProgress();
       return;
     }

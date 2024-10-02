@@ -35,7 +35,7 @@ class TextFieldPrincipal extends StatelessWidget {
         readOnly: isReadOnly,
         style: const TextStyle(
           color: Cores.textAndButtonColor,
-          fontSize: 10,
+          fontSize: 15,
         ),
         decoration: InputDecoration(
           isDense: true,
@@ -57,12 +57,12 @@ class TextFieldPrincipal extends StatelessWidget {
           ),
           constraints: const BoxConstraints(
             maxWidth: 350,
-            maxHeight: 30,
+            maxHeight: 50,
           ),
           labelText: labelText,
           labelStyle: const TextStyle(
             color: Cores.textAndButtonColor,
-            fontSize: 10,
+            fontSize: 15,
           ),
           filled: true,
           fillColor: const Color(0xFFe1e3e2),
@@ -75,7 +75,7 @@ class TextFieldPrincipal extends StatelessWidget {
             child: Center(
               child: Icon(
                 icon,
-                size: 12,
+                size: 18,
                 color: Cores.textAndButtonColor,
               ),
             ),

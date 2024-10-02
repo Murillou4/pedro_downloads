@@ -90,6 +90,7 @@ class DownloadWidget extends StatelessWidget {
                 text: 'Baixar',
                 textColor: Cores.textAndButtonColor,
                 onTap: () async {
+                  AudioDownloadController.instance.downloadsCount.value = 1;
                   AudioDownloadController.instance.downloadType.value ==
                           DownloadType.video
                       ? await AudioDownloadController.instance
@@ -119,27 +120,23 @@ class DownloadWidget extends StatelessWidget {
             ],
           ),
         ),
-        const Gap(15),
+        const Gap(10),
         InkWell(
           borderRadius: BorderRadius.circular(25),
           onTap: () {
             HomeController.instance.changeShowHistory();
           },
           child: Container(
-            width: 70,
-            height: 20,
+            width: 50,
+            height: 35,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(25),
-              color: Colors.white,
+              color: Cores.textAndButtonColor,
             ),
             child: const Center(
-              child: Text(
-                'Ver Histórico',
-                style: TextStyle(
-                  color: Cores.textAndButtonColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 8,
-                ),
+              child: Icon(
+                Icons.history,
+                color: Colors.white,
               ),
             ),
           ),

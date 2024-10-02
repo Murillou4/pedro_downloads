@@ -7,17 +7,22 @@ class SharedService {
   late SharedPreferences prefs;
 
   List<HistoryModel> getHistory() {
-    var list = prefs.getStringList(SharedKeys.historyKey) ?? [];
-    return list.map((e) => HistoryModel.fromJson(e)).toList();
+    try {
+      var list = prefs.getStringList(SharedKeys.historyKey) ?? [];
+      return list.map((e) => HistoryModel.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
   }
+
   Future<void> addToHistory(HistoryModel history) async {
     var list = prefs.getStringList(SharedKeys.historyKey) ?? [];
     list.add(history.toJson());
     await prefs.setStringList('history', list);
   }
 
-  void clearHistory() {
-    prefs.remove(SharedKeys.historyKey);
+  Future<void> clearHistory() async {
+    await prefs.remove(SharedKeys.historyKey);
   }
 
   Future<void> removeFromHistory(HistoryModel history) async {

@@ -13,7 +13,7 @@ class DownloadingCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(30),
       child: Container(
         width: 300,
-        height: 200,
+        height: 220,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           color: Cores.background,
@@ -75,45 +75,77 @@ class DownloadingCard extends StatelessWidget {
                 ),
               ),
               const Gap(15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Progresso:',
-                    style: TextStyle(
-                      color: Cores.textAndButtonColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Gap(5),
-                  ListenableBuilder(
-                    listenable:
-                        AudioDownloadController.instance.downloadProgress,
-                    builder: (context, child) {
-                      return Text(
-                        '${AudioDownloadController.instance.downloadProgress.value}/',
-                        style: const TextStyle(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Progresso:',
+                        style: TextStyle(
                           color: Cores.textAndButtonColor,
-                          fontSize: 14,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(5),
+                      ListenableBuilder(
+                        listenable:
+                            AudioDownloadController.instance.downloadsProgress,
+                        builder: (context, child) {
+                          return Text(
+                            '${AudioDownloadController.instance.downloadsProgress.value}/',
+                            style: const TextStyle(
+                              color: Cores.textAndButtonColor,
+                              fontSize: 14,
+                            ),
+                          );
+                        },
+                      ),
+                      ListenableBuilder(
+                          listenable:
+                              AudioDownloadController.instance.downloadsCount,
+                          builder: (context, child) {
+                            return Text(
+                              '${AudioDownloadController.instance.downloadsCount.value}',
+                              style: const TextStyle(
+                                color: Cores.textAndButtonColor,
+                                fontSize: 14,
+                              ),
+                            );
+                          }),
+                    ],
+                  ),
+                  const Gap(8),
+                  ValueListenableBuilder<int>(
+                    valueListenable: AudioDownloadController
+                        .instance.actualAudioOrVideoDownloadedBytes,
+                    builder: (context, downloadedBytes, child) {
+                      final totalBytes = AudioDownloadController
+                          .instance.actualAudioOrVideoTotalBytes.value;
+                      double progress = 0.0;
+                      if (totalBytes > 0) {
+                        progress = downloadedBytes / totalBytes;
+                      }
+                      return SizedBox(
+                        width: 250,
+                        child: LinearProgressIndicator(
+                          backgroundColor: Cores.textAndButtonColor,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Cores.background,
+                          ),
+                          value: progress,
+                          color: Cores.textAndButtonColor,
+                          minHeight: 5.0, // Optionally set the height
+                          borderRadius: BorderRadius.circular(10.0),
                         ),
                       );
                     },
                   ),
-                  ListenableBuilder(
-                      listenable:
-                          AudioDownloadController.instance.downloadCount,
-                      builder: (context, child) {
-                        return Text(
-                          '${AudioDownloadController.instance.downloadCount.value}',
-                          style: const TextStyle(
-                            color: Cores.textAndButtonColor,
-                            fontSize: 14,
-                          ),
-                        );
-                      }),
                 ],
               ),
               const Gap(15),

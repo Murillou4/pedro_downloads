@@ -8,6 +8,5 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedService.instance.prefs = await SharedPreferences.getInstance();
   HistoryController.instance.historyList = SharedService.instance.getHistory();
-  
   runApp(const MyApp());
 }

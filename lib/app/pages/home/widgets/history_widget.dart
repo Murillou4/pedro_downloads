@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
+import 'package:pedro_downloads/app/core/cores.dart';
 import 'package:pedro_downloads/app/models/history_model.dart';
 import 'package:pedro_downloads/app/pages/home/home_controller.dart';
 import 'package:pedro_downloads/app/pages/home/widgets/history_card.dart';
@@ -21,17 +22,29 @@ class HistoryWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
                   onPressed: () {
                     HomeController.instance.changeShowHistory();
                   },
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Cores.textAndButtonColor,
+                  ),
                 ),
-              ),
+                IconButton(
+                  onPressed: () async {
+                    await HistoryController.instance.clearHistory();
+                  },
+                  icon: const Icon(
+                    Icons.cleaning_services_outlined,
+                    color: Cores.textAndButtonColor,
+                  ),
+                )
+              ],
             ),
             Center(
               child: Padding(
@@ -51,10 +64,42 @@ class HistoryWidget extends StatelessWidget {
                                 HistoryModel history = HistoryController
                                     .instance.historyList[index];
 
-                                return HistoryCard(history: history);
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(50),
+                                        border: Border.all(
+                                          color: Cores.textAndButtonColor,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        (index + 1).toString(),
+                                        style: const TextStyle(
+                                          color: Cores.textAndButtonColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(10),
+                                    Flexible(
+                                        child: HistoryCard(history: history)),
+                                  ],
+                                );
                               },
                               separatorBuilder: (context, index) {
-                                return const Gap(10);
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 5),
+                                  child: Divider(
+                                    color: Cores.textAndButtonColor,
+                                  ),
+                                );
                               },
                             ),
                           );
